@@ -334,9 +334,12 @@ async function ghPut(arr,msg,curSha){
   if(!r.ok){const t=await r.text();throw Object.assign(new Error('GitHub write '+r.status),{status:r.status,detail:t});}
   return (await r.json()).content.sha;}
 
-function mergeById(a,b){ // newest _m wins per id; union of ids
+function mergeById(a,b){ // per id: newest _m wins on shared fields; the other copy fills in any field it's missing
   const m={}; (a||[]).forEach(o=>m[o.id]=o);
-  (b||[]).forEach(o=>{const e=m[o.id]; if(!e||(o._m||0)>(e._m||0))m[o.id]=o;});
+  (b||[]).forEach(o=>{const e=m[o.id];
+    if(!e){m[o.id]=o;return;}
+    const newer=((o._m||0)>=(e._m||0))?o:e, older=(newer===o)?e:o;
+    m[o.id]=Object.assign({},older,newer);}); // newer overwrites shared keys; older supplies keys newer lacks (e.g. abScore/choice added server-side without an _m bump)
   return Object.values(m);}
 
 async function pull(){
