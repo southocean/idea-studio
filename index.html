@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Idea Studio</title>
+<meta name="theme-color" content="#1f3a5f">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Idea Studio">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
 :root{--bg:#f4f6f9;--panel:#fff;--ink:#1d2733;--muted:#6b7785;--line:#e2e8f0;--navy:#1f3a5f;
  --accent:#2f6fb0;--label:#0f766e;--keep:#1f9d57;--kill:#d8533b;--warn:#e6a700;
@@ -95,6 +102,46 @@ kbd{background:#eef2f7;border:1px solid #d4dde7;border-bottom-width:2px;border-r
   header h1{font-size:14px} .stats{font-size:11px;gap:9px}
   .help{display:none}
 }
+/* ---- dark mode ---- */
+body.dark{--bg:#0f151c;--panel:#161f29;--ink:#e4e9ef;--muted:#8a97a6;--line:#2a3744;--navy:#16222f;--chip:#22303d;}
+body.dark #toolbar select,body.dark #toolbar input,body.dark #modal input{background:#1b2733;color:var(--ink);border-color:var(--line)}
+body.dark .chip{color:#cfe2ff} body.dark .chip.muted{color:var(--muted)}
+body.dark .gist{background:#15242f;color:#cfe2ff}
+body.dark .newscore b,body.dark .emptymsg h2{color:#cfe2ff}
+body.dark #modal .box{background:#161f29} body.dark #modal h2{color:#cfe2ff}
+body.dark #modal .btn.ghost{background:#22303d;color:#dfe7ee;border-color:var(--line)}
+body.dark .dot,body.dark .vbtn{background:#1b2733}
+body.dark kbd{background:#22303d;border-color:#2a3744;color:#cdd}
+body.dark .litem:hover{background:#1b2733} body.dark .litem.active{background:#1d2c3b}
+body.dark #list{background:#121a22} body.dark .grouphdr{background:#1b2733;color:#cfe2ff}
+body.dark .banner{background:#2a2410;border-color:#544a1d;color:#e6cf86}
+body.dark .killnote{background:#2c1a14;border-color:#5a352a;color:#e6b3a0}
+/* ---- quick-filter chips ---- */
+#chips{background:var(--panel);border-bottom:1px solid var(--line);padding:6px 12px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.qchip{background:var(--chip);color:var(--navy);border:1px solid var(--line);font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px}
+body.dark .qchip{color:var(--ink)}
+.qchip.clear{background:transparent;color:var(--muted)}
+.toggle{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.toggle input{width:auto;margin:0}
+/* ---- dashboard ---- */
+.big{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 14px}
+.stat{flex:1;min-width:86px;background:var(--chip);border-radius:9px;padding:10px 12px}
+.stat .n{font-size:22px;font-weight:800;color:var(--navy)} body.dark .stat .n{color:#cfe2ff}
+.stat .l{font-size:11px;color:var(--muted);margin-top:2px}
+.row2{display:flex;justify-content:space-between;font-size:12.5px;margin:9px 0 3px;color:var(--ink)}
+.bar{height:9px;background:var(--chip);border-radius:5px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:5px}
+/* ---- toast ---- */
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:#1f2d3d;color:#fff;padding:9px 18px;border-radius:22px;font-size:14px;font-weight:700;opacity:0;transition:.18s;z-index:40;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ---- related keeps ---- */
+.related{margin:16px 0 0;padding-top:13px;border-top:1px dashed var(--line)}
+.related .k{font-size:11px;font-weight:700;color:var(--label);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.related a{display:inline-block;background:var(--chip);color:var(--navy);font-size:12px;padding:4px 10px;border-radius:14px;margin:0 6px 6px 0;cursor:pointer}
+body.dark .related a{color:#cfe2ff}
+#newModal label{display:block;font-size:11px;font-weight:700;color:var(--label);text-transform:uppercase;letter-spacing:.4px;margin:11px 0 3px}
+#newModal input,#newModal select,#newModal textarea{width:100%;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:7px;font-family:inherit}
+#newModal textarea{min-height:60px;resize:vertical}
 </style>
 </head>
 <body>
@@ -105,6 +152,9 @@ kbd{background:#eef2f7;border:1px solid #d4dde7;border-bottom-width:2px;border-r
     <div class="stats" id="stats"></div>
     <div class="spacer"></div>
     <span id="syncState" class="off" title="Sync settings">not connected</span>
+    <button class="btn ghost sm" id="newBtn" title="Add a new idea">＋</button>
+    <button class="btn ghost sm" id="dashBtn" title="Progress">📊</button>
+    <button class="btn ghost sm" id="darkBtn" title="Dark mode">🌙</button>
     <button class="btn ghost sm" id="syncBtn" title="Sync now">⟳</button>
     <button class="btn ghost sm" id="gearBtn" title="Settings">⚙</button>
   </header>
@@ -137,6 +187,14 @@ kbd{background:#eef2f7;border:1px solid #d4dde7;border-bottom-width:2px;border-r
       <option value="old">Old rating</option>
     </select>
   </div>
+  <div id="chips">
+    <button class="qchip" data-q='{"status":"unreviewed","bucket":"AI-gen"}'>🤖 AI-gen · unreviewed</button>
+    <button class="qchip" data-q='{"status":"undecided","bucket":"Promising"}'>Promising · no verdict</button>
+    <button class="qchip" data-q='{"status":"unreviewed"}'>Unreviewed</button>
+    <button class="qchip" data-q='{"status":"keep","sort":"score"}'>★ Shortlist</button>
+    <button class="qchip clear" id="clearChip">✕ Clear</button>
+    <label class="toggle"><input type="checkbox" id="autoAdv"> Auto-advance</label>
+  </div>
   <div id="body">
     <div id="list"></div>
     <div id="overlay"></div>
@@ -165,10 +223,41 @@ kbd{background:#eef2f7;border:1px solid #d4dde7;border-bottom-width:2px;border-r
   <input type="file" id="importFile" accept=".json" style="display:none">
 </div></div>
 
+<div id="dash" style="display:none;position:fixed;inset:0;background:rgba(15,25,40,.55);z-index:20;align-items:center;justify-content:center;padding:16px"><div class="box" style="background:var(--panel);border-radius:12px;max-width:520px;width:100%;padding:22px;max-height:90vh;overflow:auto">
+  <h2 style="margin:0 0 12px;font-size:18px;color:var(--navy)">📊 Your progress</h2>
+  <div id="dashBody"></div>
+  <div class="row" style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+    <button class="btn ghost" id="dashMd">Export shortlist (.md)</button>
+    <button class="btn" id="dashClose" style="margin-left:auto">Close</button>
+  </div>
+</div></div>
+
+<div id="newModal" style="display:none;position:fixed;inset:0;background:rgba(15,25,40,.55);z-index:20;align-items:center;justify-content:center;padding:16px"><div class="box" style="background:var(--panel);border-radius:12px;max-width:460px;width:100%;padding:22px;max-height:90vh;overflow:auto">
+  <h2 style="margin:0 0 4px;font-size:18px;color:var(--navy)">＋ New idea</h2>
+  <p style="font-size:13px;color:var(--muted);margin:6px 0">Capture a fresh idea. It syncs like the rest and is tagged ✦ recent.</p>
+  <label>Core idea / title</label><input id="niElixir" placeholder="The one-line essence">
+  <label>Theme</label><select id="niTheme"></select>
+  <input id="niNewTheme" placeholder="New theme name" style="display:none;margin-top:6px">
+  <label>Logline (optional)</label><input id="niLog" placeholder="A short pitch">
+  <label>Notes (optional)</label><textarea id="niNotes" placeholder="Twist, B-story, who it's for, research…"></textarea>
+  <div class="mini" id="niMsg" style="margin-top:8px"></div>
+  <div class="row" style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+    <button class="btn" id="niSave">Add idea</button>
+    <button class="btn ghost" id="niClose" style="margin-left:auto">Cancel</button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
+
 <script>
 const BUCKETS={Seedling:1,Developing:2,Promising:3,"AI-gen":4};
-const LS_DATA='ideastudio_data', LS_CFG='ideastudio_cfg';
+const LS_DATA='ideastudio_data', LS_CFG='ideastudio_cfg', LS_PREFS='ideastudio_prefs';
 let IDEAS=[], cfg=null, sha=null, current=null, dirty=false, pushTimer=null, pulling=false;
+let prefs={autoAdvance:true,dark:false};
+function loadPrefs(){try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(LS_PREFS))||{});}catch(e){}}
+function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify(prefs));}
+function applyPrefs(){document.body.classList.toggle('dark',!!prefs.dark);const a=$('#autoAdv');if(a)a.checked=!!prefs.autoAdvance;}
+function todayStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 const $=s=>document.querySelector(s);
 const b64e=s=>btoa(unescape(encodeURIComponent(s)));
 const b64d=b=>decodeURIComponent(escape(atob(b.replace(/\n/g,''))));
@@ -321,17 +410,24 @@ function renderCard(arr){
         '<button class="vbtn kill'+(o.decision==='kill'?' on':'')+'" data-dec="kill">Kill</button></div></div></div>'+
     '<div class="f" style="margin-top:16px"><div class="k">Notes — expand the idea</div>'+
       '<textarea id="notes" placeholder="Jot a twist, a B-story, who it\'s for, what to research…">'+esc(o.notes||'')+'</textarea></div>'+
+    relatedKeeps(o)+
     '<div class="nav"><button class="btn ghost" id="prev">‹ Prev</button>'+
       '<span style="font-size:12px;color:var(--muted)">'+(idx+1)+' / '+arr.length+'</span>'+
       '<button class="btn" id="next">Next ›</button></div>'+
     '<div class="help"><kbd>↑</kbd><kbd>↓</kbd> nav · <kbd>1</kbd>–<kbd>5</kbd> commercial · <kbd>Shift</kbd>+<kbd>1</kbd>–<kbd>5</kbd> originality · <kbd>K</kbd> keep · <kbd>X</kbd> kill · <kbd>N</kbd> notes</div></div>';
   main.querySelectorAll('.dot').forEach(d=>d.onclick=()=>setScore(o,d.dataset.g,+d.dataset.v));
-  main.querySelectorAll('.vbtn').forEach(b=>b.onclick=()=>{o.decision=(o.decision===b.dataset.dec)?'':b.dataset.dec;mark(o);});
+  main.querySelectorAll('.vbtn').forEach(b=>b.onclick=()=>setVerdict(o,b.dataset.dec,true));
+  main.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{const it=IDEAS.find(x=>String(x.id)===a.dataset.go);if(it){current=it.id;closeDrawer();render();$('#main').scrollTop=0;}});
   const ta=$('#notes');if(ta)ta.oninput=()=>{o.notes=ta.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
   $('#prev').onclick=()=>move(arr,-1);$('#next').onclick=()=>move(arr,1);}
 
 function setScore(o,g,v){o[g]=(o[g]===v?null:v);o.autoScored=false;mark(o);}
-function mark(o){o.reviewed=true;o._m=Date.now();schedulePush();render();}
+function mark(o){o.reviewed=true;o._m=Date.now();if(!o.ra)o.ra=todayStr();schedulePush();render();}
+function setVerdict(o,dec,toggle){ // toggle=true for buttons/keys, false for swipe (always set)
+  const arr=filtered(),i=arr.findIndex(x=>x.id===o.id),nb=arr[i+1]||arr[i-1],nextId=nb?nb.id:null;
+  o.decision=(toggle&&o.decision===dec)?'':dec; o.reviewed=true; o._m=Date.now(); if(!o.ra)o.ra=todayStr();
+  if(o.decision&&prefs.autoAdvance&&nextId!=null)current=nextId;
+  schedulePush(); render(); $('#main').scrollTop=0;}
 function move(arr,d){const i=arr.findIndex(x=>x.id===current),j=i+d;if(j>=0&&j<arr.length){current=arr[j].id;render();$('#main').scrollTop=0;}}
 function renderStats(){const t=IDEAS.length,rev=IDEAS.filter(o=>o.reviewed).length,
   keep=IDEAS.filter(o=>o.decision==='keep').length,kill=IDEAS.filter(o=>o.decision==='kill').length;
@@ -343,6 +439,91 @@ function initThemes(){const sel=$('#fTheme'),cur=sel.value;
   sel.innerHTML='<option value="">All themes ('+IDEAS.length+')</option>'+
     th.map(t=>'<option value="'+esc(t)+'">'+esc(t)+' ('+counts[t]+')</option>').join('');
   if(cur)sel.value=cur;} // keep the chosen theme selected across refreshes
+
+/* ---------- related keeps in same theme ---------- */
+function relatedKeeps(o){
+  if(!o.theme)return '';
+  const sib=IDEAS.filter(x=>x.id!==o.id&&x.theme===o.theme&&x.decision==='keep');
+  if(!sib.length)return '';
+  return '<div class="related"><div class="k">Other keeps in “'+esc(o.theme)+'” ('+sib.length+') — consolidate?</div>'+
+    sib.slice(0,12).map(x=>'<a data-go="'+x.id+'">'+esc(x.elixir||x.logline||('#'+x.id))+'</a>').join('')+'</div>';}
+
+/* ---------- toast ---------- */
+let toastT=null;
+function toast(m){const el=$('#toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1100);}
+
+/* ---------- dashboard ---------- */
+function dashStats(){
+  const t=IDEAS.length,rev=IDEAS.filter(o=>o.reviewed).length,
+    keep=IDEAS.filter(o=>o.decision==='keep').length,kill=IDEAS.filter(o=>o.decision==='kill').length,
+    rem=t-rev,decided=keep+kill,killRate=decided?Math.round(kill/decided*100):0,
+    today=IDEAS.filter(o=>o.ra===todayStr()).length,
+    days=[...new Set(IDEAS.filter(o=>o.ra).map(o=>o.ra))],
+    perDay=days.length?rev/days.length:0,
+    sessions=perDay>0?Math.ceil(rem/perDay):null;
+  let streak=0;const set=new Set(days);const c=new Date();
+  if(!set.has(todayStr(c)))c.setDate(c.getDate()-1); // allow streak to count up to yesterday
+  while(set.has(todayStr(c))){streak++;c.setDate(c.getDate()-1);}
+  return {t,rev,keep,kill,rem,killRate,today,perDay,sessions,streak};}
+function renderDash(){
+  const s=dashStats();
+  let bars='';['AI-gen','Promising','Developing','Seedling'].forEach(b=>{
+    const all=IDEAS.filter(o=>o.bucket===b).length;if(!all)return;
+    const rv=IDEAS.filter(o=>o.bucket===b&&o.reviewed).length,pct=Math.round(rv/all*100);
+    bars+='<div class="row2"><span>'+b+'</span><span>'+rv+' / '+all+' ('+pct+'%)</span></div><div class="bar"><i style="width:'+pct+'%;background:'+bkColor(b)+'"></i></div>';});
+  const card=(n,l)=>'<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';
+  $('#dashBody').innerHTML=
+    '<div class="big">'+card(s.rev,'reviewed of '+s.t)+card(s.rem,'left to review')+card(s.keep,'kept')+card(s.killRate+'%','kill rate')+'</div>'+
+    '<div class="big">'+card(s.today,'reviewed today')+card(s.streak+(s.streak?'🔥':''),'day streak')+card(s.perDay?s.perDay.toFixed(1):'–','avg / active day')+card(s.sessions!=null?'~'+s.sessions:'–','days left at this pace')+'</div>'+
+    '<div style="font-size:12px;font-weight:700;color:var(--muted);margin:4px 0 6px;text-transform:uppercase;letter-spacing:.4px">Progress by bucket</div>'+bars;}
+function openDash(){renderDash();$('#dash').style.display='flex';}
+
+/* ---------- export shortlist (markdown) ---------- */
+function exportMd(){
+  const kept=IDEAS.filter(o=>o.decision==='keep').sort((a,b)=>((b.commercial+b.originality)||0)-((a.commercial+a.originality)||0));
+  if(!kept.length){toast('No kept ideas yet');return;}
+  let md='# Idea Studio — Shortlist ('+kept.length+' keeps)\n\n';
+  kept.forEach((o,i)=>{const ns=(o.commercial!=null&&o.originality!=null)?o.commercial+o.originality:'–';
+    md+='## '+(i+1)+'. '+(o.elixir||'(untitled)')+'\n';
+    md+='- **Theme:** '+(o.theme||'—')+' · **Score:** '+ns+'/10 · **#'+o.id+'**\n';
+    if(o.logline)md+='- **Logline:** '+o.logline+'\n';
+    if(o.desc)md+='- **Description:** '+o.desc+'\n';
+    if(o.notes)md+='- **Notes:** '+o.notes+'\n';
+    md+='\n';});
+  dl(new Blob([md],{type:'text/markdown'}),'idea-shortlist.md');}
+
+/* ---------- add new idea ---------- */
+function openNew(){
+  const themes=[...new Set(IDEAS.map(o=>o.theme).filter(Boolean))].sort();
+  $('#niTheme').innerHTML=themes.map(t=>'<option>'+esc(t)+'</option>').join('')+'<option value="__new">+ New theme…</option>';
+  $('#niElixir').value='';$('#niLog').value='';$('#niNotes').value='';$('#niNewTheme').value='';$('#niNewTheme').style.display='none';$('#niMsg').textContent='';
+  $('#newModal').style.display='flex';$('#niElixir').focus();}
+function saveNew(){
+  const el=$('#niElixir').value.trim();if(!el){$('#niMsg').textContent='Give it a title / core idea.';return;}
+  let theme=$('#niTheme').value;if(theme==='__new')theme=$('#niNewTheme').value.trim()||'Uncategorized';
+  const o={id:'u'+Date.now(),theme,elixir:el,summary:'',logline:$('#niLog').value.trim(),desc:'',chars:'',struct:'',
+    bucket:'Developing',aiGen:false,recent:true,reviewed:false,wordcount:0,commercial:null,originality:null,decision:'',notes:$('#niNotes').value.trim(),_m:Date.now()};
+  IDEAS.unshift(o);current=o.id;saveLocal();initThemes();schedulePush();
+  $('#newModal').style.display='none';render();toast('Idea added');}
+
+/* ---------- quick filters ---------- */
+function setQuick(f){if('theme'in f)$('#fTheme').value=f.theme;if('bucket'in f)$('#fBucket').value=f.bucket;
+  if('status'in f)$('#fStatus').value=f.status;if('sort'in f)$('#fSort').value=f.sort;if('search'in f)$('#search').value=f.search;
+  current=null;render();closeDrawer();}
+function clearFilters(){$('#fTheme').value='';$('#fBucket').value='';$('#fStatus').value='';$('#search').value='';$('#fSort').value='bucket';current=null;render();}
+
+/* ---------- dark mode ---------- */
+function toggleDark(){prefs.dark=!prefs.dark;savePrefs();applyPrefs();}
+
+/* ---------- swipe to decide (mobile) ---------- */
+function initSwipe(){const m=$('#main');let x0=null,y0=null,t0=0;
+  m.addEventListener('touchstart',e=>{if(e.touches.length!==1){x0=null;return;}
+    if(e.target.closest('textarea,button,a,select,input')){x0=null;return;}
+    x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now();},{passive:true});
+  m.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.8&&Date.now()-t0<700){
+      const o=IDEAS.find(x=>x.id===current);if(!o)return;
+      if(dx>0){setVerdict(o,'keep',false);toast('✓ Kept');}else{setVerdict(o,'kill',false);toast('✕ Killed');}}},{passive:true});}
 
 /* ---------- drawer ---------- */
 function openDrawer(){$('#list').classList.add('open');$('#overlay').classList.add('show');}
@@ -370,6 +551,14 @@ $('#cfgLink').onclick=async()=>{
   try{await navigator.clipboard.writeText(link);$('#cfgMsg').textContent='✓ Setup link copied. Save it privately (password manager / synced bookmark). Open it on any new device to auto-connect — no typing. Anyone with this link can read & edit your data, so keep it secret.';}
   catch(e){$('#cfgMsg').textContent='Copy & save this link privately: '+link;}};
 $('#syncBtn').onclick=()=>cfg?pull():openModal();
+/* dashboard / new / dark / chips */
+$('#dashBtn').onclick=openDash;$('#dashClose').onclick=()=>$('#dash').style.display='none';$('#dashMd').onclick=exportMd;
+$('#newBtn').onclick=openNew;$('#niSave').onclick=saveNew;$('#niClose').onclick=()=>$('#newModal').style.display='none';
+$('#niTheme').onchange=()=>{const n=$('#niTheme').value==='__new';$('#niNewTheme').style.display=n?'block':'none';if(n)$('#niNewTheme').focus();};
+$('#darkBtn').onclick=toggleDark;
+$('#autoAdv').onchange=()=>{prefs.autoAdvance=$('#autoAdv').checked;savePrefs();};
+$('#clearChip').onclick=clearFilters;
+document.querySelectorAll('#chips .qchip[data-q]').forEach(c=>c.onclick=()=>setQuick(JSON.parse(c.dataset.q)));
 /* export / import */
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
 $('#cfgExport').onclick=()=>dl(new Blob([JSON.stringify(IDEAS,null,1)],{type:'application/json'}),'ideas_data.json');
@@ -384,22 +573,23 @@ $('#importFile').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=n
 /* keyboard (desktop) */
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'){if(e.key==='Escape')e.target.blur();return;}
-  if($('#modal').style.display==='flex')return;
+  if($('#modal').style.display==='flex'||$('#dash').style.display==='flex'||$('#newModal').style.display==='flex'){if(e.key==='Escape'){$('#modal').style.display=$('#dash').style.display=$('#newModal').style.display='none';}return;}
   const o=IDEAS.find(x=>x.id===current),arr=filtered();
   if(e.key==='ArrowDown'){e.preventDefault();move(arr,1);}
   else if(e.key==='ArrowUp'){e.preventDefault();move(arr,-1);}
   else if(o&&/^[1-5]$/.test(e.key))setScore(o,e.shiftKey?'originality':'commercial',+e.key);
-  else if(o&&e.key.toLowerCase()==='k'){o.decision=o.decision==='keep'?'':'keep';mark(o);}
-  else if(o&&e.key.toLowerCase()==='x'){o.decision=o.decision==='kill'?'':'kill';mark(o);}
+  else if(o&&e.key.toLowerCase()==='k'){setVerdict(o,'keep',true);}
+  else if(o&&e.key.toLowerCase()==='x'){setVerdict(o,'kill',true);}
   else if(o&&e.key.toLowerCase()==='n'){const ta=$('#notes');if(ta){e.preventDefault();ta.focus();}}});
 ['#search','#fTheme','#fBucket','#fStatus','#fSort'].forEach(s=>$(s).addEventListener('input',render));
 window.addEventListener('focus',()=>{if(cfg&&!dirty)pull();});
 
 /* ---------- boot ---------- */
-loadLocal();applyMagicLink();initThemes();
+loadPrefs();loadLocal();applyMagicLink();initThemes();applyPrefs();initSwipe();
 current=filtered()[0]?filtered()[0].id:null;
 render();syncLabel();
 if(cfg)pull();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
