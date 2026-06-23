@@ -150,6 +150,12 @@ body.dark .related a{color:#cfe2ff}
 body.filt-open #toolbar{display:flex} body.filt-open #chips{display:flex}
 #undoBtn{display:none}
 body.dark #toast{background:#0b1218}
+/* ---- swipe feedback ---- */
+#main .card{will-change:transform}
+.swbadge{position:fixed;top:46%;transform:translateY(-50%);font-size:18px;font-weight:800;letter-spacing:.5px;padding:9px 15px;border-radius:12px;color:#fff;opacity:0;transition:opacity .08s,transform .08s;z-index:30;pointer-events:none;white-space:nowrap}
+.swbadge.keep{right:18px;background:var(--keep);border:3px solid rgba(255,255,255,.92);box-shadow:0 6px 20px rgba(0,0,0,.28)}
+.swbadge.kill{left:18px;background:var(--kill);border:3px solid rgba(255,255,255,.92);box-shadow:0 6px 20px rgba(0,0,0,.28)}
+.swbadge.armed{transform:translateY(-50%) scale(1.16)}
 </style>
 </head>
 <body>
@@ -260,6 +266,8 @@ body.dark #toast{background:#0b1218}
   </div>
 </div></div>
 
+<div id="swKeep" class="swbadge keep">✓ KEEP</div>
+<div id="swKill" class="swbadge kill">✕ KILL</div>
 <div id="toast"></div>
 
 <script>
@@ -558,14 +566,35 @@ function clearFilters(){$('#fTheme').value='';$('#fBucket').value='';$('#fStatus
 function toggleDark(){prefs.dark=!prefs.dark;savePrefs();applyPrefs();}
 
 /* ---------- swipe to decide (mobile) ---------- */
-function initSwipe(){const m=$('#main');let x0=null,y0=null,t0=0;
-  m.addEventListener('touchstart',e=>{if(e.touches.length!==1){x0=null;return;}
-    if(e.target.closest('textarea,button,a,select,input')){x0=null;return;}
-    x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now();},{passive:true});
-  m.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
-    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.8&&Date.now()-t0<700){
-      const o=IDEAS.find(x=>x.id===current);if(!o)return;
-      if(dx>0){setVerdict(o,'keep',false);toast('✓ Kept',true);}else{setVerdict(o,'kill',false);toast('✕ Killed',true);}}},{passive:true});}
+const SW_THRESH=80; // px to arm a keep/kill
+function swFb(dx){const k=$('#swKeep'),x=$('#swKill'),p=Math.min(1,Math.abs(dx)/SW_THRESH),armed=p>=1;
+  if(dx>0){k.style.opacity=0.3+0.7*p;k.classList.toggle('armed',armed);k.textContent=armed?'✓ RELEASE TO KEEP':'✓ KEEP';x.style.opacity=0;x.classList.remove('armed');}
+  else if(dx<0){x.style.opacity=0.3+0.7*p;x.classList.toggle('armed',armed);x.textContent=armed?'✕ RELEASE TO KILL':'✕ KILL';k.style.opacity=0;k.classList.remove('armed');}
+  else{k.style.opacity=0;x.style.opacity=0;}}
+function swReset(){const k=$('#swKeep'),x=$('#swKill');k.style.opacity=0;x.style.opacity=0;k.classList.remove('armed');x.classList.remove('armed');}
+function initSwipe(){const m=$('#main');let x0=null,y0=null,drag=false,card=null;
+  m.addEventListener('touchstart',e=>{drag=false;card=null;
+    if(e.touches.length!==1){x0=null;return;}
+    if(e.target.closest('textarea,button,a,select,input,.related')){x0=null;return;}
+    x0=e.touches[0].clientX;y0=e.touches[0].clientY;card=m.querySelector('.card');},{passive:true});
+  m.addEventListener('touchmove',e=>{if(x0==null)return;
+    const t=e.touches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+    if(!drag){ if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){x0=null;return;} // vertical → let it scroll
+      if(Math.abs(dx)>12)drag=true; else return; }
+    e.preventDefault(); // lock vertical scroll during a horizontal drag
+    if(card){card.style.transition='none';const rot=Math.max(-7,Math.min(7,dx*0.03));card.style.transform='translateX('+dx+'px) rotate('+rot+'deg)';}
+    swFb(dx);},{passive:false});
+  const end=e=>{if(x0==null){swReset();return;}
+    const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0,was=drag;x0=null;drag=false;
+    if(card){card.style.transition='transform .2s ease';card.style.transform='';}
+    swReset();
+    if(!was)return;
+    const o=IDEAS.find(z=>z.id===current);if(!o)return;
+    if(Math.abs(dx)>=SW_THRESH&&Math.abs(dx)>Math.abs(dy)*1.5){
+      if(dx>0){setVerdict(o,'keep',false);toast('✓ Kept',true);}else{setVerdict(o,'kill',false);toast('✕ Killed',true);}}
+    else toast('↩ Cancelled');}; // returned below threshold
+  m.addEventListener('touchend',end,{passive:true});
+  m.addEventListener('touchcancel',end,{passive:true});}
 
 /* ---------- drawer ---------- */
 function openDrawer(){$('#list').classList.add('open');$('#overlay').classList.add('show');}
