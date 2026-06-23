@@ -226,7 +226,7 @@ async function pull(){
   if(!cfg||pulling)return; pulling=true;
   try{setSync('busy','syncing…');
     const {data,sha:s}=await ghGet();
-    if(data){IDEAS=mergeById(IDEAS,data);saveLocal();}
+    if(data){IDEAS=mergeById(IDEAS,data);saveLocal();initThemes();}
     sha=s; render(); syncLabel();
   }catch(e){setSync('err','sync error');$('#cfgMsg').textContent=e.message;}
   finally{pulling=false;}}
@@ -337,8 +337,12 @@ function renderStats(){const t=IDEAS.length,rev=IDEAS.filter(o=>o.reviewed).leng
   keep=IDEAS.filter(o=>o.decision==='keep').length,kill=IDEAS.filter(o=>o.decision==='kill').length;
   $('#stats').innerHTML='<span>Rev <b>'+rev+'</b>/'+t+'</span><span style="color:#9ff5c4">Keep <b>'+keep+'</b></span><span style="color:#ffc4b8">Kill <b>'+kill+'</b></span>';}
 function render(){renderStats();renderCard(renderList());}
-function initThemes(){const th=[...new Set(IDEAS.map(o=>o.theme))].sort();
-  $('#fTheme').innerHTML='<option value="">All themes</option>'+th.map(t=>'<option>'+esc(t)+'</option>').join('');}
+function initThemes(){const sel=$('#fTheme'),cur=sel.value;
+  const counts={};IDEAS.forEach(o=>{if(!o.theme)return;counts[o.theme]=(counts[o.theme]||0)+1;});
+  const th=Object.keys(counts).sort();
+  sel.innerHTML='<option value="">All themes ('+IDEAS.length+')</option>'+
+    th.map(t=>'<option value="'+esc(t)+'">'+esc(t)+' ('+counts[t]+')</option>').join('');
+  if(cur)sel.value=cur;} // keep the chosen theme selected across refreshes
 
 /* ---------- drawer ---------- */
 function openDrawer(){$('#list').classList.add('open');$('#overlay').classList.add('show');}
