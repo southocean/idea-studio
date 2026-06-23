@@ -70,6 +70,13 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 .dot.auto.on{background:#bcd4ec;border-color:#bcd4ec;color:#36506b}
 .autohint{font-size:10px;color:#9aa6b2;margin-top:3px}
 .newscore{font-size:13px;color:var(--muted)} .newscore b{font-size:18px;color:var(--navy)}
+.abwrap{margin:16px 0 4px}
+.abrange{width:100%;accent-color:var(--accent);height:26px}
+.ablabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px;gap:8px}
+.ablabels .abval{font-weight:700;color:var(--accent);text-align:center;flex:1}
+.abcap{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+.choicebox{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+body.dark .choicebox{background:#15242f;color:#cfe2ff;border-color:#2a3b49}
 .verdict{display:flex;gap:10px}
 .vbtn{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;color:var(--muted)}
 .vbtn.keep.on{background:var(--keep);color:#fff;border-color:var(--keep)}
@@ -421,7 +428,9 @@ function renderCard(arr){
     '<div class="elixir">'+esc(o.elixir||'(no core theme)')+'</div>'+
     (o.summary?'<div class="gist"><span class="gl">Quick read</span>'+esc(o.summary)+'</div>':'')+
     '<div class="fields">'+fld('Logline',o.logline)+fld('Description',o.desc)+
-      (o.chars?fld('Characters',o.chars):'')+(o.struct?fld('Structure',o.struct):'')+'</div><hr>'+
+      (o.chars?fld('Characters',o.chars):'')+(o.struct?fld('Structure',o.struct):'')+'</div>'+
+    '<div class="f"><div class="k">Choice — the story\'s central decision</div>'+
+      '<input type="text" id="choice" class="choicebox" value="'+esc(o.choice||'')+'" placeholder="e.g. Risk or safety?"></div><hr>'+
     '<div class="scorebar">'+
       '<div class="scoregrp"><div class="k">Commercial appeal</div>'+dots('commercial',o.commercial)+(o.autoScored?'<div class="autohint">default — adjust to confirm</div>':'')+'</div>'+
       '<div class="scoregrp"><div class="k">Originality</div>'+dots('originality',o.originality)+(o.autoScored?'<div class="autohint">default — adjust to confirm</div>':'')+'</div>'+
@@ -429,6 +438,10 @@ function renderCard(arr){
       '<div class="scoregrp"><div class="k">Verdict</div><div class="verdict">'+
         '<button class="vbtn keep'+(o.decision==='keep'?' on':'')+'" data-dec="keep">Keep</button>'+
         '<button class="vbtn kill'+(o.decision==='kill'?' on':'')+'" data-dec="kill">Kill</button></div></div></div>'+
+    '<div class="abwrap"><div class="k">A ↔ B story · film-fit</div>'+
+      '<input type="range" min="0" max="100" step="5" value="'+(o.abScore!=null?o.abScore:50)+'" id="ab" class="abrange">'+
+      '<div class="ablabels"><span>← A · plot, twists, page-turner</span><span class="abval" id="abval">'+o.abScore+' · '+abDesc(o.abScore)+'</span><span>B · emotional rollercoaster →</span></div>'+
+      '<div class="abcap">A balanced score (~50) is the most film-adaptable — but the middle is crowded, so strong-A or strong-B ideas can stand out too.</div></div>'+
     '<div class="f" style="margin-top:16px"><div class="k">Notes — expand the idea</div>'+
       '<textarea id="notes" placeholder="Jot a twist, a B-story, who it\'s for, what to research…">'+esc(o.notes||'')+'</textarea></div>'+
     relatedKeeps(o)+
@@ -440,9 +453,13 @@ function renderCard(arr){
   main.querySelectorAll('.vbtn').forEach(b=>b.onclick=()=>setVerdict(o,b.dataset.dec,true));
   main.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{const it=IDEAS.find(x=>String(x.id)===a.dataset.go);if(it){current=it.id;closeDrawer();render();$('#main').scrollTop=0;}});
   const ta=$('#notes');if(ta)ta.oninput=()=>{o.notes=ta.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
+  const sl=$('#ab');if(sl){sl.oninput=()=>{$('#abval').textContent=sl.value+' · '+abDesc(+sl.value);};sl.onchange=()=>setAB(o,+sl.value);}
+  const ci=$('#choice');if(ci)ci.onchange=()=>{snapshot(o);o.choice=ci.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
   $('#prev').onclick=()=>move(arr,-1);$('#next').onclick=()=>move(arr,1);}
 
 function setScore(o,g,v){snapshot(o);o[g]=(o[g]===v?null:v);o.autoScored=false;mark(o);}
+function abDesc(v){v=(v==null?50:v);return v<=22?'Strong A · pure plot':v<=42?'A-leaning':v<=58?'Balanced · film-friendly':v<=78?'B-leaning':'Strong B · pure emotion';}
+function setAB(o,v){snapshot(o);o.abScore=v;mark(o);}
 function mark(o){o.reviewed=true;o._m=Date.now();if(!o.ra)o.ra=todayStr();schedulePush();render();}
 function setVerdict(o,dec,toggle){ // toggle=true for buttons/keys, false for swipe (always set)
   snapshot(o);
@@ -634,7 +651,7 @@ $('#filterToggle').onclick=toggleFilters;$('#undoBtn').onclick=undo;
 /* export / import */
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
 $('#cfgExport').onclick=()=>dl(new Blob([JSON.stringify(IDEAS,null,1)],{type:'application/json'}),'ideas_data.json');
-$('#cfgCsv').onclick=()=>{const cols=['id','theme','bucket','aiGen','recent','oldRating','commercial','originality','newScore','decision','reviewed','wordcount','elixir','summary','logline','desc','notes'];
+$('#cfgCsv').onclick=()=>{const cols=['id','theme','bucket','aiGen','recent','oldRating','commercial','originality','newScore','abScore','choice','decision','reviewed','wordcount','elixir','summary','logline','desc','notes'];
   const e=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const rows=[cols.join(',')];IDEAS.forEach(o=>{const ns=(o.commercial!=null&&o.originality!=null)?o.commercial+o.originality:'';rows.push(cols.map(c=>e(c==='newScore'?ns:o[c])).join(','));});
   dl(new Blob(['﻿'+rows.join('\n')],{type:'text/csv'}),'ideas_review.csv');};
