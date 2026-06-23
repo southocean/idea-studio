@@ -154,6 +154,7 @@ kbd{background:#eef2f7;border:1px solid #d4dde7;border-bottom-width:2px;border-r
   <div class="mini">Token needs only: this repo → Contents → Read &amp; write. See README for steps.</div>
   <div class="row">
     <button class="btn" id="cfgConnect">Connect &amp; pull</button>
+    <button class="btn ghost" id="cfgLink">Copy setup link</button>
     <button class="btn ghost" id="cfgExport">Export JSON</button>
     <button class="btn ghost" id="cfgImport">Import JSON</button>
     <button class="btn ghost" id="cfgCsv">Export CSV</button>
@@ -176,6 +177,17 @@ function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS_DATA));if(Ar
   try{cfg=JSON.parse(localStorage.getItem(LS_CFG))||null;}catch(e){cfg=null;}}
 function saveLocal(){localStorage.setItem(LS_DATA,JSON.stringify(IDEAS));}
 function saveCfg(){localStorage.setItem(LS_CFG,JSON.stringify(cfg));}
+function applyMagicLink(){ // one-time setup via bookmarkable link: #owner=..&repo=..&token=..
+  const h=location.hash.slice(1); if(!h)return;
+  const p=new URLSearchParams(h); if(!p.get('token'))return;
+  cfg={owner:(p.get('owner')||'').trim(),repo:(p.get('repo')||'').trim(),branch:(p.get('branch')||'main').trim(),path:(p.get('path')||'ideas_data.json').trim(),token:(p.get('token')||'').trim()};
+  saveCfg();
+  history.replaceState(null,'',location.pathname+location.search);} // strip token from the address bar
+function makeLink(){
+  const c=cfg||{}; const o=$('#cfgOwner').value.trim()||c.owner, r=$('#cfgRepo').value.trim()||c.repo,
+    b=$('#cfgBranch').value.trim()||c.branch||'main', pa=$('#cfgPath').value.trim()||c.path||'ideas_data.json', t=$('#cfgToken').value.trim()||c.token;
+  if(!o||!r||!t)return null;
+  return location.origin+location.pathname+'#'+new URLSearchParams({owner:o,repo:r,branch:b,path:pa,token:t}).toString();}
 
 /* ---------- sync UI ---------- */
 function setSync(state,txt){const el=$('#syncState');el.className=state;el.textContent=txt;}
@@ -347,6 +359,11 @@ $('#cfgConnect').onclick=async()=>{
     sha=s;initThemes();render();syncLabel();$('#cfgMsg').textContent=data?('Connected — '+IDEAS.length+' ideas loaded.'):'Connected — repo empty; your local data will be pushed on next edit.';
     if(!data&&IDEAS.length){await push();}
   }catch(e){$('#cfgMsg').textContent=e.message;setSync('err','sync error');}};
+$('#cfgLink').onclick=async()=>{
+  const link=makeLink();
+  if(!link){$('#cfgMsg').textContent='Fill owner, repo and token first, then copy the link.';return;}
+  try{await navigator.clipboard.writeText(link);$('#cfgMsg').textContent='✓ Setup link copied. Save it privately (password manager / synced bookmark). Open it on any new device to auto-connect — no typing. Anyone with this link can read & edit your data, so keep it secret.';}
+  catch(e){$('#cfgMsg').textContent='Copy & save this link privately: '+link;}};
 $('#syncBtn').onclick=()=>cfg?pull():openModal();
 /* export / import */
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
@@ -374,7 +391,7 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('focus',()=>{if(cfg&&!dirty)pull();});
 
 /* ---------- boot ---------- */
-loadLocal();initThemes();
+loadLocal();applyMagicLink();initThemes();
 current=filtered()[0]?filtered()[0].id:null;
 render();syncLabel();
 if(cfg)pull();
