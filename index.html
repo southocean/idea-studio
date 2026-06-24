@@ -559,8 +559,7 @@ function renderCard(arr){
   const sm=(o.summary||'').trim(),lg=(o.logline||'').trim();
   const showGist=sm&&sm.toLowerCase()!==lg.toLowerCase(); // hide quick-read if empty or identical to logline
   const ab=(o.abScore!=null?o.abScore:50);
-  const killnote=o.decision==='kill'?'<div class="killnote">✕ Killed — but <b>not deleted</b>. It stays in your data (filter Status → Killed) and still exports. Swipe/press the other way to revive.</div>':'';
-  main.innerHTML=killnote+'<div class="card">'+
+  main.innerHTML='<div class="card">'+
     '<div class="crumbs"><span class="chip">'+esc(o.theme)+'</span>'+
       '<span class="chip" style="background:'+bkColor(o.bucket)+';color:#fff">'+o.bucket+'</span>'+
       '<span class="chip muted">#'+o.id+'</span>'+
@@ -607,8 +606,13 @@ function renderCard(arr){
 function setScore(o,g,v){snapshot(o);o[g]=(o[g]===v?null:v);o.autoScored=false;mark(o);}
 function abPos(){const sl=$('#ab'),b=$('#abbub');if(!sl||!b)return;const v=+sl.value;b.textContent=v;b.style.left='calc('+(v/100)+' * (100% - 20px) + 10px)';} // bubble tracks the thumb
 function placeZones(){const card=$('#main .card'),kz=$('#keepZone'),xz=$('#killZone');if(!card||window.innerWidth<=820)return;
-  const cr=card.getBoundingClientRect(),br=$('#body').getBoundingClientRect();
-  xz.style.right='auto';kz.style.right='auto';xz.style.left=(cr.left-br.left-23)+'px';kz.style.left=(cr.right-br.left-23)+'px';}
+  const cr=card.getBoundingClientRect(),br=$('#body').getBoundingClientRect(),mr=$('#main').getBoundingClientRect();
+  const w=46,gap=16; // sit fully outside the card with a margin
+  let killLeft=cr.left-br.left-gap-w, keepLeft=cr.right-br.left+gap;
+  killLeft=Math.max(mr.left-br.left+4,killLeft);          // never overlap the list
+  keepLeft=Math.min(mr.right-br.left-w-4,keepLeft);        // never run off the right edge
+  xz.style.right='auto';kz.style.right='auto';
+  xz.style.left=killLeft+'px';kz.style.left=keepLeft+'px';}
 function setAB(o,v){snapshot(o);o.abScore=v;mark(o);}
 function mark(o){o.reviewed=true;o._m=Date.now();if(!o.ra)o.ra=todayStr();schedulePush();render();}
 function setVerdict(o,dec,toggle){ // toggle=true for buttons/keys, false for swipe (always set)
