@@ -2,7 +2,7 @@
    Online: always serves the freshest file from the network (so app updates appear immediately).
    Offline: falls back to the last cached copy (works in tunnels / dead zones).
    GitHub API calls are never cached — the app handles offline edits itself via localStorage. */
-const CACHE = 'idea-studio-v12';
+const CACHE = 'idea-studio-v13';
 
 self.addEventListener('install', () => self.skipWaiting());
 

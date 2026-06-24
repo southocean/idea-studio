@@ -177,11 +177,10 @@ body.dark .stars.auto .star.on{color:#a98f4a}
 .scorebar .scoregrp{flex:1 1 auto;min-width:0}
 .scorebar .scoregrp.newsc{flex:0 0 auto;min-width:42px;text-align:right}
 .notesToggle{background:var(--chip);border:1px solid var(--line);color:var(--ink);font-weight:600;font-size:12.5px;padding:7px 12px;border-radius:8px;cursor:pointer}
-.skipBtn,.prevBtn{position:absolute;top:9px;background:none;border:none;color:var(--muted);font-size:26px;line-height:1;padding:2px 4px;cursor:pointer;z-index:2}
-.skipBtn{right:12px}.prevBtn{left:12px}
-.skipBtn:hover,.prevBtn:hover{color:var(--ink)}
+.skipBtn{position:absolute;top:9px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;line-height:1;padding:2px 4px;cursor:pointer;z-index:2}
+.skipBtn:hover{color:var(--ink)}
 .skipTxt{display:none}
-.crumbs{padding:0 44px}
+.crumbs{padding-right:44px}
 /* ---- verdict side zones (mirror swipe) ---- */
 .vzone{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.85);color:#fff;font-size:20px;font-weight:800;box-shadow:0 3px 14px rgba(0,0,0,.22);opacity:.9;display:none;align-items:center;justify-content:center}
 .vzone:active{transform:translateY(-50%) scale(.9)}
@@ -572,7 +571,6 @@ function renderCard(arr){
   const showGist=sm&&sm.toLowerCase()!==lg.toLowerCase(); // hide quick-read if empty or identical to logline
   const ab=(o.abScore!=null?o.abScore:50);
   main.innerHTML='<div class="card">'+
-    '<button class="prevBtn" id="prevBtn" title="Previous idea">⏮</button>'+
     '<button class="skipBtn" id="skipBtn" title="Skip — next idea, no verdict"><span class="skipTxt">Skip </span>⏭</button>'+
     '<div class="crumbs"><span class="chip">'+esc(o.theme)+'</span>'+
       '<span class="chip" style="background:'+bkColor(o.bucket)+';color:#fff">'+o.bucket+'</span>'+
@@ -610,7 +608,6 @@ function renderCard(arr){
   main.querySelectorAll('.star').forEach(s=>s.onclick=()=>setScore(o,s.closest('.stars').dataset.g,+s.dataset.v));
   main.querySelectorAll('.copyfield').forEach(el=>el.onclick=()=>{if(Date.now()-lastSwipe<300)return;const t=el.textContent;if(!t||t==='— none —')return;navigator.clipboard.writeText(t).then(()=>toast('✓ Copied'),()=>toast('Copy failed'));});
   main.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{const it=IDEAS.find(x=>String(x.id)===a.dataset.go);if(it){current=it.id;closeDrawer();render();$('#main').scrollTop=0;}});
-  const pv=$('#prevBtn');if(pv)pv.onclick=()=>move(filtered(),-1);
   const sk=$('#skipBtn');if(sk)sk.onclick=()=>move(filtered(),1);
   const nt=$('#notesToggle');if(nt)nt.onclick=()=>{const w=$('#notesWrap'),show=w.style.display==='none';w.style.display=show?'block':'none';if(show){const t=$('#notes');if(t)t.focus();}};
   const ta=$('#notes');if(ta)ta.oninput=()=>{o.notes=ta.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
