@@ -177,18 +177,17 @@ body.dark .stars.auto .star.on{color:#a98f4a}
 .scorebar .scoregrp{flex:1 1 auto;min-width:0}
 .scorebar .scoregrp.newsc{flex:0 0 auto;min-width:42px;text-align:right}
 .notesToggle{background:var(--chip);border:1px solid var(--line);color:var(--ink);font-weight:600;font-size:12.5px;padding:7px 12px;border-radius:8px;cursor:pointer}
-.skipBtn{position:absolute;top:12px;right:12px;background:var(--chip);border:1px solid var(--line);color:var(--muted);font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:14px;cursor:pointer;z-index:2}
+.skipBtn{position:absolute;top:9px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;line-height:1;padding:2px 4px;cursor:pointer;z-index:2}
 .skipBtn:hover{color:var(--ink)}
-.crumbs{padding-right:58px}
+.skipTxt{display:none}
+.crumbs{padding-right:44px}
 /* ---- verdict side zones (mirror swipe) ---- */
 .vzone{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.85);color:#fff;font-size:20px;font-weight:800;box-shadow:0 3px 14px rgba(0,0,0,.22);opacity:.9;display:none;align-items:center;justify-content:center}
 .vzone:active{transform:translateY(-50%) scale(.9)}
 .vzone.kill{left:12px;background:var(--kill)}
 .vzone.keep{right:12px;background:var(--keep)}
 .vzone.on{box-shadow:0 0 0 4px rgba(255,255,255,.4),0 3px 14px rgba(0,0,0,.22);opacity:1}
-@media (max-width:820px){.vzone{display:none!important}.stars{font-size:19px}
-  .skipBtn{background:none;border:none;color:var(--muted);font-size:27px;padding:0;top:8px;right:10px}
-  .skipBtn .skipTxt{display:none}}
+@media (max-width:820px){.vzone{display:none!important}.stars{font-size:19px}}
 #qrBox canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%}
 </style>
 </head>
@@ -625,10 +624,14 @@ function placeZones(){const card=$('#main .card'),kz=$('#keepZone'),xz=$('#killZ
   keepLeft=Math.min(mr.right-br.left-w-4,keepLeft);        // never run off the right edge
   xz.style.right='auto';kz.style.right='auto';
   xz.style.left=killLeft+'px';kz.style.left=keepLeft+'px';}
-function placeBadges(){const card=$('#main .card'),k=$('#swKeep'),x=$('#swKill');if(!card)return; // swipe badges sit on the card's sides, GAP inside each edge
-  const cr=card.getBoundingClientRect();
-  k.style.left='auto';k.style.right=(window.innerWidth-cr.right+GAP)+'px';
-  x.style.right='auto';x.style.left=(cr.left+GAP)+'px';}
+function placeBadges(){const card=$('#main .card'),k=$('#swKeep'),x=$('#swKill');if(!card)return;
+  const cr=card.getBoundingClientRect(),vw=window.innerWidth,bw=90;
+  if(vw>820){ // desktop: outer side of the card, like the keep/kill buttons (clamped on-screen)
+    let kl=Math.min(cr.right+GAP, vw-bw-6); k.style.right='auto';k.style.left=kl+'px';
+    let xr=Math.min(vw-(cr.left-GAP), vw-bw-6); x.style.left='auto';x.style.right=xr+'px';
+  }else{ // mobile: no outer room — sit just inside the card edges
+    k.style.left='auto';k.style.right=(vw-cr.right+GAP)+'px';
+    x.style.right='auto';x.style.left=(cr.left+GAP)+'px';}}
 function setAB(o,v){snapshot(o);o.abScore=v;mark(o);}
 function mark(o){o.reviewed=true;o._m=Date.now();if(!o.ra)o.ra=todayStr();schedulePush();render();}
 function setVerdict(o,dec,toggle){ // toggle=true for buttons/keys, false for swipe (always set)
@@ -765,8 +768,8 @@ function toggleDark(){prefs.dark=!prefs.dark;savePrefs();applyPrefs();}
 /* ---------- swipe to decide (mobile) ---------- */
 const SW_THRESH=80; // px to arm a keep/kill
 function swFb(dx){const k=$('#swKeep'),x=$('#swKill'),p=Math.min(1,Math.abs(dx)/SW_THRESH),armed=p>=1;
-  if(dx>0){k.style.opacity=0.3+0.7*p;k.classList.toggle('armed',armed);k.textContent=armed?'✓ RELEASE TO KEEP':'✓ KEEP';x.style.opacity=0;x.classList.remove('armed');}
-  else if(dx<0){x.style.opacity=0.3+0.7*p;x.classList.toggle('armed',armed);x.textContent=armed?'✕ RELEASE TO KILL':'✕ KILL';k.style.opacity=0;k.classList.remove('armed');}
+  if(dx>0){k.style.opacity=0.3+0.7*p;k.classList.toggle('armed',armed);k.textContent='✓ KEEP';x.style.opacity=0;x.classList.remove('armed');}
+  else if(dx<0){x.style.opacity=0.3+0.7*p;x.classList.toggle('armed',armed);x.textContent='✕ KILL';k.style.opacity=0;k.classList.remove('armed');}
   else{k.style.opacity=0;x.style.opacity=0;}}
 function swReset(){const k=$('#swKeep'),x=$('#swKill');k.style.opacity=0;x.style.opacity=0;k.classList.remove('armed');x.classList.remove('armed');}
 function initSwipe(){const m=$('#main');let x0=null,y0=null,drag=false,card=null;
