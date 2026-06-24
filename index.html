@@ -168,7 +168,9 @@ body.dark #toast{background:#0b1218}
 .star{color:#cbd5e1;padding:0 1px;transition:color .1s}
 .star.on{color:var(--warn)}
 .stars.auto .star.on{color:#dcc77f}
-body.dark .star{color:#3a4756}
+body.dark .star{color:#56657a}
+body.dark .star.on{color:#ffc83d}
+body.dark .stars.auto .star.on{color:#a98f4a}
 .scorebar{gap:8px 12px;flex-wrap:nowrap}
 .scorebar .scoregrp{flex:1 1 auto;min-width:0}
 .scorebar .scoregrp.newsc{flex:0 0 auto;min-width:42px;text-align:right}
@@ -586,9 +588,7 @@ function renderCard(arr){
       '<button class="notesToggle" id="notesToggle">'+(o.notes?'📝 Notes — tap to edit':'📝 Add notes')+'</button>'+
       '<div id="notesWrap" style="display:none;margin-top:8px"><textarea id="notes" placeholder="Jot a twist, a B-story, who it\'s for, what to research…">'+esc(o.notes||'')+'</textarea></div></div>'+
     relatedKeeps(o)+
-    '<div class="nav"><button class="btn ghost" id="prev">‹ Prev</button>'+
-      '<span style="font-size:12px;color:var(--muted)">'+(idx+1)+' / '+arr.length+'</span>'+
-      '<button class="btn" id="next">Next ›</button></div>'+
+    '<div class="nav" style="justify-content:center"><span style="font-size:12px;color:var(--muted)">'+(idx+1)+' / '+arr.length+'</span></div>'+
     '<div class="help"><kbd>↑</kbd><kbd>↓</kbd> nav · <kbd>←</kbd> kill · <kbd>→</kbd> keep · <kbd>1</kbd>–<kbd>5</kbd> commercial · <kbd>Shift</kbd>+<kbd>1-5</kbd> originality · <kbd>U</kbd> undo · <kbd>N</kbd> notes</div></div>';
   if(window.innerWidth>820){ // verdict zones flank the card on desktop only (mobile uses swipe)
     $('#keepZone').style.display=$('#killZone').style.display='flex';
@@ -600,8 +600,7 @@ function renderCard(arr){
   const nt=$('#notesToggle');if(nt)nt.onclick=()=>{const w=$('#notesWrap'),show=w.style.display==='none';w.style.display=show?'block':'none';if(show){const t=$('#notes');if(t)t.focus();}};
   const ta=$('#notes');if(ta)ta.oninput=()=>{o.notes=ta.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
   const sl=$('#ab');if(sl){abPos();sl.oninput=abPos;sl.onchange=()=>setAB(o,+sl.value);}
-  const ci=$('#choice');if(ci)ci.onchange=()=>{snapshot(o);o.choice=ci.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
-  $('#prev').onclick=()=>move(arr,-1);$('#next').onclick=()=>move(arr,1);}
+  const ci=$('#choice');if(ci)ci.onchange=()=>{snapshot(o);o.choice=ci.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};}
 
 function setScore(o,g,v){snapshot(o);o[g]=(o[g]===v?null:v);o.autoScored=false;mark(o);}
 function abPos(){const sl=$('#ab'),b=$('#abbub');if(!sl||!b)return;const v=+sl.value;b.textContent=v;b.style.left='calc('+(v/100)+' * (100% - 20px) + 10px)';} // bubble tracks the thumb
@@ -837,7 +836,7 @@ document.addEventListener('keydown',e=>{
   else if(o&&/^[1-5]$/.test(e.key))setScore(o,e.shiftKey?'originality':'commercial',+e.key);
   else if(o&&e.key.toLowerCase()==='k'){setVerdict(o,'keep',true);}
   else if(o&&e.key.toLowerCase()==='x'){setVerdict(o,'kill',true);}
-  else if(o&&e.key.toLowerCase()==='n'){const ta=$('#notes');if(ta){e.preventDefault();ta.focus();}}
+  else if(o&&e.key.toLowerCase()==='n'){const w=$('#notesWrap'),ta=$('#notes');if(ta){e.preventDefault();if(w)w.style.display='block';ta.focus();}}
   else if(e.key.toLowerCase()==='u'||((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z')){e.preventDefault();undo();}});
 ['#search','#fTheme','#fBucket','#fStatus','#fSort'].forEach(s=>$(s).addEventListener('input',render));
 window.addEventListener('focus',()=>{if(cfg&&!dirty)pull();});
