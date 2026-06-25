@@ -843,12 +843,14 @@ function buildMood(){const bk=$('#moodBucket').value, pool=bk?IDEAS.filter(o=>o.
     box.innerHTML=ents.map(([label,c])=>{const r=vnRes().find(x=>x.label===label),sz=(13+22*Math.sqrt(c/max)).toFixed(1);
       return '<span class="moodterm" data-l="'+esc(label)+'" data-m="ref" style="font-size:'+sz+'px;color:'+moodColor(r.cat)+'" title="'+c+' idea'+(c>1?'s':'')+'">'+esc(label)+'</span>';}).join('');
   }else{
-    leg.textContent='Most frequent words (common words removed) — tap to filter to that word.';
-    const c={}; for(const o of pool){const ws=(o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase().replace(/[^a-z0-9\sà-ỹ]/g,' ').split(/\s+/);
-      for(const w of ws){if(w.length<3||AUTO_STOP.has(w)||/^[0-9]+$/.test(w))continue;c[w]=(c[w]||0)+1;}}
-    const ents=Object.entries(c).filter(e=>e[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,60); if(!ents.length){box.innerHTML=empty;return;}
+    leg.textContent='Most common word pairs (filler removed) — tap to filter to that phrase.';
+    const c={}; for(const o of pool){const ws=(o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase().replace(/[^a-z0-9\sà-ỹ]/g,' ').split(/\s+/).filter(Boolean);
+      for(let i=0;i<ws.length-1;i++){const a=ws[i],b2=ws[i+1];
+        if(a.length<2||b2.length<2||AUTO_STOP.has(a)||AUTO_STOP.has(b2)||/^[0-9]+$/.test(a)||/^[0-9]+$/.test(b2))continue;
+        const bg=a+' '+b2;c[bg]=(c[bg]||0)+1;}}
+    const ents=Object.entries(c).filter(e=>e[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,55); if(!ents.length){box.innerHTML=empty;return;}
     const max=ents[0][1];
-    box.innerHTML=ents.map(([w,n])=>{const sz=(12+20*Math.sqrt(n/max)).toFixed(1);
+    box.innerHTML=ents.map(([w,n])=>{const sz=(12+18*Math.sqrt(n/max)).toFixed(1);
       return '<span class="moodterm" data-l="'+esc(w)+'" data-m="word" style="font-size:'+sz+'px;color:var(--accent)" title="'+n+'×">'+esc(w)+'</span>';}).join('');
   }
   box.querySelectorAll('.moodterm').forEach(s=>s.onclick=()=>{
