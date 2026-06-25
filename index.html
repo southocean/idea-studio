@@ -189,6 +189,12 @@ body.dark .stars.auto .star.on{color:#a98f4a}
 .vzone.on{box-shadow:0 0 0 4px rgba(255,255,255,.4),0 3px 14px rgba(0,0,0,.22);opacity:1}
 @media (max-width:820px){.vzone{display:none!important}.stars{font-size:19px}}
 #qrBox canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%}
+.moodcloud{display:flex;flex-wrap:wrap;gap:7px 16px;align-items:center;justify-content:center;line-height:1.25;margin-top:14px;padding:6px}
+.moodterm{font-weight:700;cursor:pointer}
+.moodterm:hover{text-decoration:underline}
+.moodbanner{max-width:760px;margin:0 auto 12px;background:#f0f7ff;border:1px solid #cfe0f3;color:var(--navy);font-size:12.5px;padding:8px 13px;border-radius:8px}
+body.dark .moodbanner{background:#15242f;border-color:#2a3b49;color:#cfe2ff}
+.moodbanner #moodClear{background:none;border:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12.5px;margin-left:4px}
 </style>
 </head>
 <body>
@@ -201,6 +207,7 @@ body.dark .stars.auto .star.on{color:#a98f4a}
     <span id="syncState" class="off" title="Sync settings">not connected</span>
     <button class="btn ghost sm" id="newBtn" title="Add a new idea">＋</button>
     <button class="btn ghost sm" id="dashBtn" title="Progress">📊</button>
+    <button class="btn ghost sm" id="moodBtn" title="Vietnamese mood board">🎨</button>
     <button class="btn ghost sm" id="darkBtn" title="Dark mode">🌙</button>
     <button class="btn ghost sm" id="syncBtn" title="Sync now">⟳</button>
     <button class="btn ghost sm" id="gearBtn" title="Settings">⚙</button>
@@ -309,6 +316,16 @@ body.dark .stars.auto .star.on{color:#a98f4a}
   <div class="row" style="display:flex;gap:10px;margin-top:14px"><button class="btn ghost" id="qrSave">Save image</button><button class="btn" id="qrClose" style="margin-left:auto">Close</button></div>
 </div></div>
 
+<div id="moodModal" style="display:none;position:fixed;inset:0;background:rgba(15,25,40,.55);z-index:20;align-items:center;justify-content:center;padding:16px"><div class="box" style="background:var(--panel);border-radius:12px;max-width:520px;width:100%;padding:22px;max-height:90vh;overflow:auto">
+  <h2 style="margin:0 0 4px;font-size:18px;color:var(--navy)">🎨 Vietnamese mood board</h2>
+  <p class="mini">Recurring Vietnamese references — food, places, traditions, imagery — across your ideas. Tap one to see the ideas that use it.</p>
+  <div style="margin:10px 0 4px"><span class="lbl">Bucket</span>
+    <select id="moodBucket"><option value="">All buckets</option><option value="AI-gen">🤖 AI-gen</option><option value="Promising">Promising</option><option value="Developing">Developing</option><option value="Seedling">Seedling</option></select>
+    <span class="lbl" style="margin-left:8px">🟠 food · 🔵 place · 🔴 tradition · 🟢 nature</span></div>
+  <div id="moodCloud" class="moodcloud"></div>
+  <div class="row" style="display:flex;gap:10px;margin-top:16px"><button class="btn" id="moodClose" style="margin-left:auto">Close</button></div>
+</div></div>
+
 <div id="swKeep" class="swbadge keep">✓ KEEP</div>
 <div id="swKill" class="swbadge kill">✕ KILL</div>
 <div id="toast"></div>
@@ -321,6 +338,8 @@ let prefs={autoAdvance:true,dark:false};
 let dataFloor=0; // largest trusted record count seen — guards against pushing truncated data
 const GAP=26;    // gutter between the card edge and the keep/kill buttons & badges
 let lastSwipe=0; // timestamp of last swipe commit (so a click right after doesn't also copy)
+const LS_VIEW='ideastudio_view'; // persisted filters + current card, restored next session
+let moodFilter=null,moodLabel='',VN_RES=null; // Vietnamese mood-board state
 function loadPrefs(){try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(LS_PREFS))||{});}catch(e){}}
 function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify(prefs));}
 function applyPrefs(){document.body.classList.toggle('dark',!!prefs.dark);const a=$('#autoAdv');if(a)a.checked=!!prefs.autoAdvance;document.body.classList.toggle('filt-open',!!prefs.filtersOpen);}
@@ -524,6 +543,7 @@ function filtered(){
     if(st==='kill'&&o.decision!=='kill')return false;
     if(st==='undecided'&&o.decision)return false;
     if(st==='recent'&&!o.recent)return false;
+    if(moodFilter&&!moodFilter.test((o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase()))return false;
     if(q){const h=(o.id+' '+o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase();if(!h.includes(q))return false;}
     return true;});
   const sort=$('#fSort').value;
@@ -568,9 +588,12 @@ function renderCard(arr){
   const fldc=(k,v)=>'<div class="f"><div class="k">'+k+'</div><div class="v copyfield'+(v?'':' empty')+'" title="Click to copy">'+(v?esc(v):'— none —')+'</div></div>'; // click-to-copy
   const stars=(g,val)=>{let h='<div class="stars'+(o.autoScored?' auto':'')+'" data-g="'+g+'">';for(let i=1;i<=5;i++)h+='<span class="star'+((val||0)>=i?' on':'')+'" data-v="'+i+'">'+((val||0)>=i?'★':'☆')+'</span>';return h+'</div>';};
   const sm=(o.summary||'').trim(),lg=(o.logline||'').trim();
-  const showGist=sm&&sm.toLowerCase()!==lg.toLowerCase(); // hide quick-read if empty or identical to logline
+  const nrm=s=>(s||'').toLowerCase().replace(/[\s….]+$/,'').replace(/\s+/g,' ').trim();
+  const nsm=nrm(sm),nd=nrm(o.desc);
+  const showGist=!!sm && nsm!==nrm(lg) && !(nsm&&nd.startsWith(nsm)); // hide if empty, == logline, or just the start of the description
   const ab=(o.abScore!=null?o.abScore:50);
-  main.innerHTML='<div class="card">'+
+  main.innerHTML=(moodFilter?'<div class="moodbanner">🎨 Vietnamese reference: <b>'+esc(moodLabel)+'</b> · '+arr.length+' idea'+(arr.length===1?'':'s')+' <button id="moodClear">show all ✕</button></div>':'')+
+    '<div class="card">'+
     '<button class="skipBtn" id="skipBtn" title="Skip — next idea, no verdict"><span class="skipTxt">Skip </span>⏭</button>'+
     '<div class="crumbs"><span class="chip">'+esc(o.theme)+'</span>'+
       '<span class="chip" style="background:'+bkColor(o.bucket)+';color:#fff">'+o.bucket+'</span>'+
@@ -609,6 +632,7 @@ function renderCard(arr){
   main.querySelectorAll('.copyfield').forEach(el=>el.onclick=()=>{if(Date.now()-lastSwipe<300)return;const t=el.textContent;if(!t||t==='— none —')return;navigator.clipboard.writeText(t).then(()=>toast('✓ Copied'),()=>toast('Copy failed'));});
   main.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{const it=IDEAS.find(x=>String(x.id)===a.dataset.go);if(it){current=it.id;closeDrawer();render();$('#main').scrollTop=0;}});
   const sk=$('#skipBtn');if(sk)sk.onclick=()=>move(filtered(),1);
+  const mc=$('#moodClear');if(mc)mc.onclick=()=>{moodFilter=null;moodLabel='';current=null;render();};
   const nt=$('#notesToggle');if(nt)nt.onclick=()=>{const w=$('#notesWrap'),show=w.style.display==='none';w.style.display=show?'block':'none';if(show){const t=$('#notes');if(t)t.focus();}};
   const ta=$('#notes');if(ta)ta.oninput=()=>{o.notes=ta.value;o._m=Date.now();o.reviewed=true;schedulePush();renderStats();};
   const sl=$('#ab');if(sl){abPos();sl.oninput=abPos;sl.onchange=()=>setAB(o,+sl.value);}
@@ -654,7 +678,7 @@ function move(arr,d){const i=arr.findIndex(x=>x.id===current),j=i+d;if(j>=0&&j<a
 function renderStats(){const t=IDEAS.length,rev=IDEAS.filter(o=>o.reviewed).length,
   keep=IDEAS.filter(o=>o.decision==='keep').length,kill=IDEAS.filter(o=>o.decision==='kill').length;
   $('#stats').innerHTML='<span>Rev <b>'+rev+'</b>/'+t+'</span><span style="color:#9ff5c4">Keep <b>'+keep+'</b></span><span style="color:#ffc4b8">Kill <b>'+kill+'</b></span>';}
-function render(){renderStats();renderCard(renderList());updateFilterBar();updateUndoBtn();}
+function render(){renderStats();renderCard(renderList());updateFilterBar();updateUndoBtn();saveView();}
 function initThemes(){const sel=$('#fTheme'),cur=sel.value;
   const counts={};IDEAS.forEach(o=>{if(!o.theme)return;counts[o.theme]=(counts[o.theme]||0)+1;});
   const th=Object.keys(counts).sort();
@@ -692,6 +716,7 @@ function updateUndoBtn(){$('#undoBtn').style.display=undoStack.length?'inline-bl
 
 /* ---------- filter bar (collapse) ---------- */
 function activeFilterText(){const parts=[],q=$('#search').value.trim(),th=$('#fTheme').value,bk=$('#fBucket').value,st=$('#fStatus');
+  if(moodLabel)parts.push('🎨 '+moodLabel);
   if(q)parts.push('“'+q+'”');if(th)parts.push(th);if(bk)parts.push(bk);
   if(st.value)parts.push(st.selectedOptions[0].textContent);
   return parts.length?parts.join(' · '):'no filters';}
@@ -760,7 +785,53 @@ function saveNew(){
 function setQuick(f){if('theme'in f)$('#fTheme').value=f.theme;if('bucket'in f)$('#fBucket').value=f.bucket;
   if('status'in f)$('#fStatus').value=f.status;if('sort'in f)$('#fSort').value=f.sort;if('search'in f)$('#search').value=f.search;
   current=null;render();closeDrawer();}
-function clearFilters(){$('#fTheme').value='';$('#fBucket').value='';$('#fStatus').value='';$('#search').value='';$('#fSort').value='bucket';current=null;render();}
+function clearFilters(){$('#fTheme').value='';$('#fBucket').value='';$('#fStatus').value='';$('#search').value='';$('#fSort').value='bucket';moodFilter=null;moodLabel='';current=null;render();}
+
+/* ---------- session view persistence ---------- */
+function saveView(){try{localStorage.setItem(LS_VIEW,JSON.stringify({q:$('#search').value,th:$('#fTheme').value,bk:$('#fBucket').value,st:$('#fStatus').value,so:$('#fSort').value,mood:moodLabel,cur:current}));}catch(e){}}
+function loadView(){try{const v=JSON.parse(localStorage.getItem(LS_VIEW));if(!v)return null;
+  const set=(id,val)=>{const el=$(id);if(val!=null&&[...el.options].some(o=>o.value===val))el.value=val;};
+  if(v.q!=null)$('#search').value=v.q; set('#fTheme',v.th);set('#fBucket',v.bk);set('#fStatus',v.st);set('#fSort',v.so);
+  if(v.mood){const r=vnRes().find(x=>x.label===v.mood);if(r){moodFilter=r.re;moodLabel=r.label;}}
+  return v;}catch(e){return null;}}
+
+/* ---------- Vietnamese mood board ---------- */
+const VNDICT=[
+ ['Phở','food',['phở','\\bpho\\b']],['Bánh mì','food',['bánh mì','banh mi']],['Bánh chưng','food',['bánh chưng','banh chung']],
+ ['Bánh tét','food',['bánh tét','banh tet']],['Bún bò Huế','food',['bún bò huế','bun bo hue']],['Bún chả','food',['bún chả','bun cha']],
+ ['Bún','food',['bún']],['Chè','food',['chè']],['Cà phê','food',['cà phê','café','ca phe']],['Nước mắm','food',['nước mắm','nuoc mam','fish sauce']],
+ ['Gỏi cuốn','food',['gỏi cuốn','goi cuon','spring roll']],['Chả giò','food',['chả giò','cha gio']],['Cơm tấm','food',['cơm tấm','com tam']],
+ ['Xôi','food',['xôi']],['Bánh xèo','food',['bánh xèo','banh xeo']],['Bánh trung thu','food',['bánh trung thu','mooncake']],
+ ['Mít','food',['jackfruit','\\bmít\\b']],['Sầu riêng','food',['durian','sầu riêng']],['Thanh long','food',['dragon fruit','thanh long']],
+ ['Hà Nội','place',['hà nội','hanoi','ha noi']],['Sài Gòn','place',['sài gòn','saigon','sai gon']],['Hồ Chí Minh','place',['hồ chí minh','ho chi minh']],
+ ['Huế','place',['huế','\\bhue\\b']],['Hội An','place',['hội an','hoi an']],['Đà Nẵng','place',['đà nẵng','da nang']],
+ ['Mekong','place',['mekong','cửu long','mê kông']],['Hạ Long','place',['hạ long','ha long','halong']],['Sơn Đoòng','place',['sơn đoòng','son doong']],
+ ['Sa Pa','place',['sa pa','sapa']],['Đà Lạt','place',['đà lạt','da lat','dalat']],['Tây Bắc','place',['tây bắc','tay bac']],
+ ['Phú Quốc','place',['phú quốc','phu quoc']],['Nha Trang','place',['nha trang']],['Sông Hương','place',['sông hương','perfume river']],
+ ['Tết','tradition',['tết','\\btet\\b']],['Áo dài','tradition',['áo dài','ao dai']],['Nón lá','tradition',['nón lá','non la','conical hat']],
+ ['Vàng mã','tradition',['vàng mã','vang ma','votive']],['Múa rối nước','tradition',['múa rối nước','water puppet','rối nước']],
+ ['Lì xì','tradition',['lì xì','li xi','lucky money']],['Bàn thờ','tradition',['bàn thờ','ancestor altar','ancestor worship']],
+ ['Chùa','tradition',['chùa','pagoda']],['Lễ hội','tradition',['lễ hội','le hoi']],['Trung Thu','tradition',['trung thu','mid-autumn','mid autumn']],
+ ['Ông Táo','tradition',['ông táo','ong tao','kitchen god']],['Đám giỗ','tradition',['đám giỗ','death anniversary']],
+ ['Bà mối','tradition',['bà mối','ba moi','matchmaker']],['Nhang/hương','tradition',['\\bnhang\\b','incense']],['Thầy bói','tradition',['thầy bói','thay boi','fortune teller']],
+ ['Hoa sen','nature',['hoa sen','lotus']],['Tre','nature',['cây tre','bamboo']],['Lúa','nature',['ruộng lúa','rice paddy','rice paddies','cánh đồng lúa']],
+ ['Trâu','nature',['con trâu','water buffalo']],['Hoa mai','nature',['hoa mai']],['Hoa đào','nature',['hoa đào']],
+ ['Đèn lồng','nature',['đèn lồng','lantern']],['Xích lô','nature',['xích lô','xich lo','cyclo']]];
+function vnRes(){ if(VN_RES)return VN_RES; const B='[^a-zà-ỹ]';
+  VN_RES=VNDICT.map(([label,cat,pats])=>{const alt=pats.map(p=>p.startsWith('\\b')?p.slice(2,-2):p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/ +/g,'\\s+')).join('|');
+    return {label,cat,re:new RegExp('(?:^|'+B+')(?:'+alt+')(?:'+B+'|$)')};});
+  return VN_RES;}
+function moodColor(cat){return cat==='food'?'#c2410c':cat==='place'?'#2f6fb0':cat==='tradition'?'#c0392b':'#1f9d57';}
+function buildMood(){const bk=$('#moodBucket').value, pool=bk?IDEAS.filter(o=>o.bucket===bk):IDEAS, counts={};
+  for(const o of pool){const txt=(o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase();
+    for(const r of vnRes())if(r.re.test(txt))counts[r.label]=(counts[r.label]||0)+1;}
+  const ents=Object.entries(counts).sort((a,b)=>b[1]-a[1]), box=$('#moodCloud');
+  if(!ents.length){box.innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px">No Vietnamese references found in this bucket.</div>';return;}
+  const max=ents[0][1];
+  box.innerHTML=ents.map(([label,c])=>{const r=vnRes().find(x=>x.label===label),sz=(13+22*Math.sqrt(c/max)).toFixed(1);
+    return '<span class="moodterm" data-l="'+esc(label)+'" style="font-size:'+sz+'px;color:'+moodColor(r.cat)+'" title="'+c+' idea'+(c>1?'s':'')+'">'+esc(label)+'</span>';}).join('');
+  box.querySelectorAll('.moodterm').forEach(s=>s.onclick=()=>{const r=vnRes().find(x=>x.label===s.dataset.l);moodFilter=r.re;moodLabel=r.label;if(bk)$('#fBucket').value=bk;current=null;$('#moodModal').style.display='none';render();});}
+function openMood(){buildMood();$('#moodModal').style.display='flex';}
 
 /* ---------- dark mode ---------- */
 function toggleDark(){prefs.dark=!prefs.dark;savePrefs();applyPrefs();}
@@ -854,6 +925,7 @@ $('#qrSave').onclick=()=>{const cv=$('#qrBox canvas');if(!cv){toast('Generate th
 $('#syncBtn').onclick=()=>cfg?pull():openModal();
 /* dashboard / new / dark / chips */
 $('#dashBtn').onclick=openDash;$('#dashClose').onclick=()=>$('#dash').style.display='none';$('#dashMd').onclick=exportMd;
+$('#moodBtn').onclick=openMood;$('#moodBucket').onchange=buildMood;$('#moodClose').onclick=()=>$('#moodModal').style.display='none';
 $('#newBtn').onclick=openNew;$('#niSave').onclick=saveNew;$('#niClose').onclick=()=>$('#newModal').style.display='none';
 $('#niTheme').onchange=()=>{const n=$('#niTheme').value==='__new';$('#niNewTheme').style.display=n?'block':'none';if(n)$('#niNewTheme').focus();};
 $('#darkBtn').onclick=toggleDark;
@@ -876,7 +948,7 @@ $('#importFile').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=n
 /* keyboard (desktop) */
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'){if(e.key==='Escape')e.target.blur();return;}
-  if($('#modal').style.display==='flex'||$('#dash').style.display==='flex'||$('#newModal').style.display==='flex'||$('#qrModal').style.display==='flex'){if(e.key==='Escape'){$('#modal').style.display=$('#dash').style.display=$('#newModal').style.display=$('#qrModal').style.display='none';}return;}
+  if($('#modal').style.display==='flex'||$('#dash').style.display==='flex'||$('#newModal').style.display==='flex'||$('#qrModal').style.display==='flex'||$('#moodModal').style.display==='flex'){if(e.key==='Escape'){$('#modal').style.display=$('#dash').style.display=$('#newModal').style.display=$('#qrModal').style.display=$('#moodModal').style.display='none';}return;}
   const o=IDEAS.find(x=>x.id===current),arr=filtered();
   if(e.key==='ArrowDown'){e.preventDefault();move(arr,1);}
   else if(e.key==='ArrowUp'){e.preventDefault();move(arr,-1);}
@@ -894,7 +966,8 @@ window.addEventListener('resize',()=>{const show=window.innerWidth>820&&IDEAS.le
 /* ---------- boot ---------- */
 loadPrefs();if(prefs.filtersOpen===undefined)prefs.filtersOpen=window.innerWidth>820;
 loadLocal();applyMagicLink();initThemes();applyPrefs();initSwipe();initMouseNav();
-current=filtered()[0]?filtered()[0].id:null;
+const _sv=loadView(); // restore last session's filters + card
+current=(_sv&&_sv.cur!=null&&IDEAS.some(x=>x.id===_sv.cur))?_sv.cur:(filtered()[0]?filtered()[0].id:null);
 render();syncLabel();
 if(cfg)pull();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
