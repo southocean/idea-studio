@@ -320,8 +320,8 @@ body.dark .moodbanner{background:#15242f;border-color:#2a3b49;color:#cfe2ff}
   <h2 style="margin:0 0 4px;font-size:18px;color:var(--navy)">🎨 Vietnamese mood board</h2>
   <p class="mini">Recurring Vietnamese references — food, places, traditions, imagery — across your ideas. Tap one to see the ideas that use it.</p>
   <div style="margin:10px 0 4px"><span class="lbl">Bucket</span>
-    <select id="moodBucket"><option value="">All buckets</option><option value="AI-gen">🤖 AI-gen</option><option value="Promising">Promising</option><option value="Developing">Developing</option><option value="Seedling">Seedling</option></select>
-    <span class="lbl" style="margin-left:8px">🟠 food · 🔵 place · 🔴 tradition · 🟢 nature</span></div>
+    <select id="moodBucket"><option value="AI-gen">🤖 AI-gen</option><option value="Promising">Promising</option><option value="Developing">Developing</option><option value="Seedling">Seedling</option><option value="">All buckets</option></select></div>
+  <div class="lbl" id="moodLegend" style="margin:4px 0"></div>
   <div id="moodCloud" class="moodcloud"></div>
   <div class="row" style="display:flex;gap:10px;margin-top:16px"><button class="btn" id="moodClose" style="margin-left:auto">Close</button></div>
 </div></div>
@@ -795,43 +795,67 @@ function loadView(){try{const v=JSON.parse(localStorage.getItem(LS_VIEW));if(!v)
   if(v.mood){const r=vnRes().find(x=>x.label===v.mood);if(r){moodFilter=r.re;moodLabel=r.label;}}
   return v;}catch(e){return null;}}
 
-/* ---------- Vietnamese mood board ---------- */
+/* ---------- mood board ---------- */
+/* AI-gen bucket: curated Vietnamese references across 6 topic categories */
 const VNDICT=[
  ['Phở','food',['phở','\\bpho\\b']],['Bánh mì','food',['bánh mì','banh mi']],['Bánh chưng','food',['bánh chưng','banh chung']],
- ['Bánh tét','food',['bánh tét','banh tet']],['Bún bò Huế','food',['bún bò huế','bun bo hue']],['Bún chả','food',['bún chả','bun cha']],
- ['Bún','food',['bún']],['Chè','food',['chè']],['Cà phê','food',['cà phê','café','ca phe']],['Nước mắm','food',['nước mắm','nuoc mam','fish sauce']],
- ['Gỏi cuốn','food',['gỏi cuốn','goi cuon','spring roll']],['Chả giò','food',['chả giò','cha gio']],['Cơm tấm','food',['cơm tấm','com tam']],
- ['Xôi','food',['xôi']],['Bánh xèo','food',['bánh xèo','banh xeo']],['Bánh trung thu','food',['bánh trung thu','mooncake']],
- ['Mít','food',['jackfruit','\\bmít\\b']],['Sầu riêng','food',['durian','sầu riêng']],['Thanh long','food',['dragon fruit','thanh long']],
+ ['Bún chả','food',['bún chả','bun cha']],['Bún bò Huế','food',['bún bò huế','bun bo hue']],['Bún','food',['bún','\\bbun\\b']],
+ ['Chè','food',['chè']],['Cà phê','food',['cà phê','café','ca phe','egg coffee','coffee shop']],['Cơm/rice','food',['\\brice\\b','cơm']],
+ ['Lotus tea','food',['lotus tea']],['Thanh long','food',['dragon fruit','thanh long']],['Sầu riêng','food',['durian','sầu riêng']],
+ ['Mít','food',['jackfruit','\\bmít\\b']],['Xôi','food',['xôi']],['Bánh xèo','food',['bánh xèo','banh xeo']],
+ ['Gỏi cuốn','food',['gỏi cuốn','spring roll','goi cuon']],['Nước mắm','food',['fish sauce','nước mắm']],['Street food','food',['street food','food vendor','food stall','street vendor']],
  ['Hà Nội','place',['hà nội','hanoi','ha noi']],['Sài Gòn','place',['sài gòn','saigon','sai gon']],['Hồ Chí Minh','place',['hồ chí minh','ho chi minh']],
  ['Huế','place',['huế','\\bhue\\b']],['Hội An','place',['hội an','hoi an']],['Đà Nẵng','place',['đà nẵng','da nang']],
- ['Mekong','place',['mekong','cửu long','mê kông']],['Hạ Long','place',['hạ long','ha long','halong']],['Sơn Đoòng','place',['sơn đoòng','son doong']],
- ['Sa Pa','place',['sa pa','sapa']],['Đà Lạt','place',['đà lạt','da lat','dalat']],['Tây Bắc','place',['tây bắc','tay bac']],
- ['Phú Quốc','place',['phú quốc','phu quoc']],['Nha Trang','place',['nha trang']],['Sông Hương','place',['sông hương','perfume river']],
- ['Tết','tradition',['tết','\\btet\\b']],['Áo dài','tradition',['áo dài','ao dai']],['Nón lá','tradition',['nón lá','non la','conical hat']],
- ['Vàng mã','tradition',['vàng mã','vang ma','votive']],['Múa rối nước','tradition',['múa rối nước','water puppet','rối nước']],
- ['Lì xì','tradition',['lì xì','li xi','lucky money']],['Bàn thờ','tradition',['bàn thờ','ancestor altar','ancestor worship']],
- ['Chùa','tradition',['chùa','pagoda']],['Lễ hội','tradition',['lễ hội','le hoi']],['Trung Thu','tradition',['trung thu','mid-autumn','mid autumn']],
- ['Ông Táo','tradition',['ông táo','ong tao','kitchen god']],['Đám giỗ','tradition',['đám giỗ','death anniversary']],
- ['Bà mối','tradition',['bà mối','ba moi','matchmaker']],['Nhang/hương','tradition',['\\bnhang\\b','incense']],['Thầy bói','tradition',['thầy bói','thay boi','fortune teller']],
- ['Hoa sen','nature',['hoa sen','lotus']],['Tre','nature',['cây tre','bamboo']],['Lúa','nature',['ruộng lúa','rice paddy','rice paddies','cánh đồng lúa']],
- ['Trâu','nature',['con trâu','water buffalo']],['Hoa mai','nature',['hoa mai']],['Hoa đào','nature',['hoa đào']],
- ['Đèn lồng','nature',['đèn lồng','lantern']],['Xích lô','nature',['xích lô','xich lo','cyclo']]];
+ ['Mekong','place',['mekong','cửu long']],['Hạ Long','place',['hạ long','ha long','halong']],['Sơn Đoòng','place',['sơn đoòng','son doong']],
+ ['Sa Pa','place',['sa pa','sapa']],['Đà Lạt','place',['đà lạt','da lat']],['Tây Bắc','place',['tây bắc','tay bac']],
+ ['Phú Quốc','place',['phú quốc','phu quoc']],['Bát Tràng','place',['bát tràng','bat trang']],['Rural village','place',['rural village','rural']],
+ ['Rice field','place',['rice field','rice paddy','rice paddies','ruộng lúa']],
+ ['Tết','festival',['tết','\\btet\\b','lunar new year']],['Trung Thu','festival',['trung thu','mid-autumn','mid autumn','autumn festival','moon festival']],
+ ['Lễ hội','festival',['lễ hội','\\bfestival\\b']],['Lantern festival','festival',['lantern festival']],['Đám cưới','festival',['wedding','đám cưới']],
+ ['Đám giỗ','festival',['đám giỗ','death anniversary','ancestor worship']],
+ ['Hoa sen','symbol',['hoa sen','lotus']],['Đèn lồng','symbol',['đèn lồng','lantern']],['Áo dài','symbol',['áo dài','ao dai']],
+ ['Nón lá','symbol',['nón lá','non la','conical hat']],['Rồng','symbol',['\\bdragon\\b','\\brồng\\b']],['Trâu','symbol',['water buffalo','con trâu','\\bbuffalo\\b']],
+ ['Tre','symbol',['\\bbamboo\\b','cây tre']],['Diều','symbol',['\\bkite\\b','diều']],['Hương/nhang','symbol',['incense','\\bnhang\\b']],
+ ['Ma/quỷ','symbol',['\\bghost\\b','\\bspirit\\b','haunted','ma quỷ']],['Trống đồng','symbol',['trống đồng','bronze drum']],['Xe máy','symbol',['motorbike','scooter','xe máy','xe ôm']],
+ ['Chùa','symbol',['chùa','pagoda']],
+ ['Thả diều','activity',['kite flying','thả diều']],['Múa rối nước','activity',['water puppet','múa rối nước','rối nước']],['Karaoke','activity',['karaoke']],
+ ['Du học','activity',['studying abroad','study abroad','du học']],['Học thêm','activity',['extra classes','học thêm']],['Flexing','activity',['flexing','khoe của']],
+ ['Xem bói','activity',['fortune teller','fortune telling','thầy bói','xem bói']],['Trồng lúa','activity',['rice farming','trồng lúa']],['Đánh đề','activity',['đánh đề','lô đề','gambling']],
+ ['Pollution','problem',['pollution','ô nhiễm']],['Corruption','problem',['corruption','tham nhũng']],['Brain drain','problem',['brain drain']],
+ ['Wealth gap','problem',['\\bwealth\\b','inequality','giàu nghèo']],['Crime','problem',['\\bcrime\\b','tội phạm']],['War','problem',['\\bwar\\b','chiến tranh']],
+ ['Social pressure','problem',['societal expectations','social pressure','áp lực']],['Scams','problem',['\\bscam','lừa đảo']],['Traffic','problem',['\\btraffic\\b','kẹt xe']],
+ ['Superstition','problem',['superstition','mê tín']],['Censorship','problem',['censorship','kiểm duyệt']]];
 function vnRes(){ if(VN_RES)return VN_RES; const B='[^a-zà-ỹ]';
   VN_RES=VNDICT.map(([label,cat,pats])=>{const alt=pats.map(p=>p.startsWith('\\b')?p.slice(2,-2):p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/ +/g,'\\s+')).join('|');
     return {label,cat,re:new RegExp('(?:^|'+B+')(?:'+alt+')(?:'+B+'|$)')};});
   return VN_RES;}
-function moodColor(cat){return cat==='food'?'#c2410c':cat==='place'?'#2f6fb0':cat==='tradition'?'#c0392b':'#1f9d57';}
-function buildMood(){const bk=$('#moodBucket').value, pool=bk?IDEAS.filter(o=>o.bucket===bk):IDEAS, counts={};
-  for(const o of pool){const txt=(o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase();
-    for(const r of vnRes())if(r.re.test(txt))counts[r.label]=(counts[r.label]||0)+1;}
-  const ents=Object.entries(counts).sort((a,b)=>b[1]-a[1]), box=$('#moodCloud');
-  if(!ents.length){box.innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px">No Vietnamese references found in this bucket.</div>';return;}
-  const max=ents[0][1];
-  box.innerHTML=ents.map(([label,c])=>{const r=vnRes().find(x=>x.label===label),sz=(13+22*Math.sqrt(c/max)).toFixed(1);
-    return '<span class="moodterm" data-l="'+esc(label)+'" style="font-size:'+sz+'px;color:'+moodColor(r.cat)+'" title="'+c+' idea'+(c>1?'s':'')+'">'+esc(label)+'</span>';}).join('');
-  box.querySelectorAll('.moodterm').forEach(s=>s.onclick=()=>{const r=vnRes().find(x=>x.label===s.dataset.l);moodFilter=r.re;moodLabel=r.label;if(bk)$('#fBucket').value=bk;current=null;$('#moodModal').style.display='none';render();});}
-function openMood(){buildMood();$('#moodModal').style.display='flex';}
+function moodColor(cat){return {food:'#c2410c',place:'#2f6fb0',festival:'#7c3aed',symbol:'#c026d3',activity:'#1f9d57',problem:'#c0392b'}[cat]||'#2f6fb0';}
+/* other buckets: real frequency word cloud, with common (EN+VN) words stripped */
+const AUTO_STOP=new Set(('the a an of to in and or is are was were be been being with for on at by from as that this it its his her their they them he she who which what when where why how but not no if then than so into out up down over under after before about between through during all any some more most can will would could should may might must one two three has have had do does did get gets got make makes made like just also very much many new old find finds found becomes become turns turn back again own only even still both each another your you i we my our us someone something everyone nothing everything people person human time day night year years world city town home house death love family friend friends mother father son daughter child children story stories idea ideas man woman girl boy guy lady kid guys thing things way ways begins begin start starts must while against leading explores discovers learns journey coming age small group secret secrets him them others because too other now actually here there maybe need needs needed lot lots whole real away show shows showed these those first last take takes took same better best want wants wanted good bad always never don doesn didn doesnt dont cant such going right left see sees saw know knows knew doing done eventually end ends ended big well still around every really get gets getting keep keeps kept come comes came go goes went put use uses used say says said tell told ask asks asked feel feels felt look looks looked seem seems try tries trying call called give gives gave let lets able gonna wanna gotta yeah okay enough quite rather pretty almost perhaps however though although yet whether either neither whose whom across along among behind beside besides beyond despite except inside outside toward towards unless until upon within without whatever whenever wherever whoever next once part full set turned turning making working trying living being having doing isn aren wasn weren hasn haven won wouldn couldn shouldn able sort kind type bit thats theyre hes shes youre basically lol etc protag himself herself themselves anything point off '+
+ 'và là của để được có với ở người nhưng về cả đó nhà mà này các một những không cho khi như thì sẽ đã bị rồi ra vào lên xuống hơn rất cũng nên vì bằng theo tại trong ngoài trên dưới sau trước giữa chàng nàng anh em cô bà ông chú bác nó họ mình tôi ta ai gì đâu nào sao vậy thế đến từ nếu hay hoặc còn đang vẫn chỉ mới lại nữa quá lắm nhiều ít nhất đi làm nói biết thấy muốn cần phải nghĩ thành do bởi sự việc cái con chiếc lý nhiên tự rằng cùng chính mỗi đầu tay mắt lòng đời sống chết yêu thương ghét sợ cười khóc trở nên hết bắt giờ ngày đêm năm tháng tuổi lần chuyện truyện kể khác bọn trẻ già lớn nhỏ vietnam viet vietnamese').split(/\s+/).filter(Boolean));
+function buildMood(){const bk=$('#moodBucket').value, pool=bk?IDEAS.filter(o=>o.bucket===bk):IDEAS, box=$('#moodCloud'), leg=$('#moodLegend');
+  const empty='<div style="color:var(--muted);font-size:13px;padding:20px">Nothing to show for this bucket.</div>';
+  if(bk==='AI-gen'){
+    leg.innerHTML='<span style="color:#c2410c">●</span> food · <span style="color:#2f6fb0">●</span> place · <span style="color:#7c3aed">●</span> festival · <span style="color:#c026d3">●</span> symbol · <span style="color:#1f9d57">●</span> activity · <span style="color:#c0392b">●</span> problem';
+    const counts={}; for(const o of pool){const t=(o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase();for(const r of vnRes())if(r.re.test(t))counts[r.label]=(counts[r.label]||0)+1;}
+    const ents=Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(!ents.length){box.innerHTML=empty;return;}
+    const max=ents[0][1];
+    box.innerHTML=ents.map(([label,c])=>{const r=vnRes().find(x=>x.label===label),sz=(13+22*Math.sqrt(c/max)).toFixed(1);
+      return '<span class="moodterm" data-l="'+esc(label)+'" data-m="ref" style="font-size:'+sz+'px;color:'+moodColor(r.cat)+'" title="'+c+' idea'+(c>1?'s':'')+'">'+esc(label)+'</span>';}).join('');
+  }else{
+    leg.textContent='Most frequent words (common words removed) — tap to filter to that word.';
+    const c={}; for(const o of pool){const ws=(o.elixir+' '+o.summary+' '+o.logline+' '+o.desc+' '+(o.notes||'')).toLowerCase().replace(/[^a-z0-9\sà-ỹ]/g,' ').split(/\s+/);
+      for(const w of ws){if(w.length<3||AUTO_STOP.has(w)||/^[0-9]+$/.test(w))continue;c[w]=(c[w]||0)+1;}}
+    const ents=Object.entries(c).filter(e=>e[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,60); if(!ents.length){box.innerHTML=empty;return;}
+    const max=ents[0][1];
+    box.innerHTML=ents.map(([w,n])=>{const sz=(12+20*Math.sqrt(n/max)).toFixed(1);
+      return '<span class="moodterm" data-l="'+esc(w)+'" data-m="word" style="font-size:'+sz+'px;color:var(--accent)" title="'+n+'×">'+esc(w)+'</span>';}).join('');
+  }
+  box.querySelectorAll('.moodterm').forEach(s=>s.onclick=()=>{
+    if(s.dataset.m==='ref'){const r=vnRes().find(x=>x.label===s.dataset.l);moodFilter=r.re;moodLabel=r.label;$('#search').value='';}
+    else{$('#search').value=s.dataset.l;moodFilter=null;moodLabel='';}
+    if(bk)$('#fBucket').value=bk; current=null;$('#moodModal').style.display='none';render();});}
+function openMood(){if(!$('#moodBucket').value)$('#moodBucket').value='AI-gen';buildMood();$('#moodModal').style.display='flex';}
 
 /* ---------- dark mode ---------- */
 function toggleDark(){prefs.dark=!prefs.dark;savePrefs();applyPrefs();}
